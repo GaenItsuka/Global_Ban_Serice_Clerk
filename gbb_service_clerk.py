@@ -36,7 +36,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-GBBTYPE, EVIDENCE = range(2)
+GBBTYPE, EVIDENCE, EVIDENCE_PHOTO = range(3)
 
 ############################################################
 #
@@ -87,9 +87,11 @@ def createRequestLogTable():
             requestUserName text,
             requestType text,
             requestEvidence text,
-            isEvidencePhoto bool,
+            requestEvidencePhoto text,
+            isEvidenceHasPhoto bool,
             processed bool,
-            result text
+            result text,
+            handler text
             );
         """
     )
@@ -104,7 +106,8 @@ def createRequestLog(
     ticketUserName: str = None,
     ticketType: str = None,
     requestEvidence: str = None,
-    isEvidencePhoto: bool = False,
+    requestEvidencePhoto: str = None,
+    isEvidenceHasPhoto: bool = False,
 ):
     conn, cursor = createConnection()
     response = cursor.execute(
@@ -116,9 +119,11 @@ def createRequestLog(
             requestUserName,
             requestType,
             requestEvidence,
-            isEvidencePhoto,
+            requestEvidencePhoto,
+            isEvidenceHasPhoto,
             processed,
-            result
+            result,
+            handler
         ) 
         VALUES (
             "{ticketID}",
@@ -128,8 +133,10 @@ def createRequestLog(
             "{ticketUserName}",
             "{ticketType}",
             "{requestEvidence}",
-            {isEvidencePhoto},
+            "{requestEvidence}",
+            {isEvidenceHasPhoto},
             False,
+            "None",
             "None"
         );
         """
@@ -156,7 +163,9 @@ def updateRequestLog(
     ticketUser: str = None,
     ticketType: str = None,
     requestEvidence: str = None,
-    isEvidencePhoto: bool = None,
+    requestEvidencePhoto: str = None,
+    isEvidenceHasPhoto: bool = None,
+    handler: str=None
 ):
     conn, cursor = createConnection()
     if ticketType is not None and requestEvidence is None:
@@ -170,11 +179,27 @@ def updateRequestLog(
     elif requestEvidence is not None:
         response = cursor.execute(
             f"""UPDATE GbbRequest
-            SET requestEvidence = "{requestEvidence}",
-                isEvidencePhoto = {isEvidencePhoto}
+            SET requestEvidence = "{requestEvidence}"
             WHERE requestID = "{ticketID}"
             """
         )
+    elif requestEvidencePhoto is not None:
+        response = cursor.execute(
+            f"""UPDATE GbbRequest
+            SET requestEvidencePhoto = "{requestEvidencePhoto}",
+                isEvidenceHasPhoto = True
+            WHERE requestID = "{ticketID}"
+            """
+        )
+    elif handler is not None:
+        response = cursor.execute(
+            f"""UPDATE GbbRequest
+            SET handler = "{handler}",
+                processed = True
+            WHERE requestID = "{ticketID}"
+            """
+        )
+    
     conn.commit()
     conn.close()
 
@@ -322,16 +347,16 @@ async def showRemainRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                 ]
 
                 reply_markup = InlineKeyboardMarkup(keyboard)
-                if _dict["isEvidencePhoto"]:
+                if _dict["isEvidenceHasPhoto"]:
                     message_template = (
                         f"Request ticket with ID: {_dict['requestID']} received! \n"
                         rf"The user who submitted the request: {user_submit.mention_html()}. "
                         f"\nThe type of GBB request: {_dict['requestType']}. \n"
-                        rf"Evidende: Please check the attachment."
+                        rf"Evidende: {_dict['requestEvidence']}."
                     )
 
                     await update.message.reply_photo(
-                        photo=str(_dict["requestEvidence"]),
+                        photo=str(_dict["requestEvidencePhoto"]),
                         parse_mode="HTML",
                         caption=message_template,
                         reply_markup=reply_markup,
@@ -406,6 +431,47 @@ async def revokeAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
     await update.message.reply_html(message)
 
+async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    HQIndex = getHQIndex()
+    bot = context.bot
+    replied_message = update.message.reply_to_message
+    replied_user = replied_message.from_user
+    sender = update.effective_user
+    chat = update.effective_chat
+    
+
+    if replied_message is not None and context.args != []:
+        comment = "_".join(context.args)
+        mesesage = (
+            rf"User: {sender.mention_html()} has report a GBB reuqest in {chat.mention_html()}."
+            rf"Message link: {replied_message.link}"
+            f"\nComment: {comment}."
+        )
+        
+        bot_reply = await update.message.reply_text("The message has been reported.")
+
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "Done", callback_data=f"processed_{chat.id}_{bot_reply.message_id}"
+                ),
+                InlineKeyboardButton(
+                    "Reject", callback_data=f"rejected_{chat.id}_{bot_reply.message_id}"
+                ),
+            ]
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await bot.send_message(
+            HQIndex,
+            mesesage,
+            parse_mode="HTML",
+            reply_markup=reply_markup,
+        )
+    elif replied_message is not None and context.args == []:
+        await update.message.reply_text("No comment message exists. Please send a report with comment again.")
+    else:
+        await update.message.reply_text("No replied message exists. Please check again.")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Send a message when the command /start is issued."""
@@ -497,33 +563,30 @@ async def gbbtype(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return EVIDENCE
 
 
-async def evidence(update: Update, context: ContextTypes.DEFAULT_TYPE, bot=None) -> int:
+async def evidenceText(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the selected gender and asks for a photo."""
-    # NordlichtChatID = -640476491
     HQIndex = getHQIndex()
+    bot = context.bot
     user = update.message.from_user
-    photo = update.message.photo
     text = update.message.text
     latestTicket = getLatestTicket(user.id)
 
-    isEvidencePhoto = False if photo == () else True
-
-    evidence = photo[1].file_id if isEvidencePhoto else text
-
     updateRequestLog(
         latestTicket.requestID,
-        requestEvidence=evidence,
-        isEvidencePhoto=isEvidencePhoto,
+        requestEvidence=text,
     )
 
-    logger.info("GBB evidence from %s: %s, %s", user.first_name, text, photo)
+    logger.info("GBB evidence from %s: %s", user.first_name, text)
     await update.message.reply_text(
-        "I see! Please be patient and wait for admin's review. ",
+        "I see! Are you going to send a photo as a supplementary material? If not, send /skip.",
         reply_markup=ReplyKeyboardRemove(),
     )
 
-    completeRequest = getLatestTicket(user.id)
+    return EVIDENCE_PHOTO
 
+async def postSubmissionAction(user, bot):
+    HQIndex = getHQIndex()
+    completeRequest = getLatestTicket(user.id)
     keyboard = [
         [
             InlineKeyboardButton(
@@ -536,28 +599,21 @@ async def evidence(update: Update, context: ContextTypes.DEFAULT_TYPE, bot=None)
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-
-    if completeRequest.isEvidencePhoto:
-        message_template = (
-            f"A new GBB request ticket with ID: {completeRequest.requestID} received! \n"
-            rf"The user who submitted the request: {user.mention_html()}. "
-            f"\nThe type of GBB request: {completeRequest.requestType}. \n"
-            rf"Evidende: Please check the attachment."
-        )
+    message_template = (
+        f"A new GBB request ticket with ID: {completeRequest.requestID} received! \n"
+        rf"The user who submitted the request: {user.mention_html()}. "
+        f"\nThe type of GBB request: {completeRequest.requestType}. \n"
+        rf"Evidende: {completeRequest.requestEvidence}."
+    )
+    if completeRequest.isEvidenceHasPhoto:
         await bot.send_photo(
             HQIndex,
-            photo=str(evidence),
+            photo=str(completeRequest.requestEvidencePhoto),
             parse_mode="HTML",
             caption=message_template,
             reply_markup=reply_markup,
         )
     else:
-        message_template = (
-            f"A new GBB request ticket with ID: {completeRequest.requestID} received! \n"
-            rf"The user who submitted the request: {user.mention_html()}. "
-            f"\nThe type of GBB request: {completeRequest.requestType}. \n"
-            rf"Evidence: {completeRequest.requestEvidence}."
-        )
         await bot.send_message(
             HQIndex,
             message_template,
@@ -565,22 +621,99 @@ async def evidence(update: Update, context: ContextTypes.DEFAULT_TYPE, bot=None)
             reply_markup=reply_markup,
         )
 
+async def evidencePhoto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the selected gender and asks for a photo."""
+    bot = context.bot
+    user = update.message.from_user
+    photo = update.message.photo
+    latestTicket = getLatestTicket(user.id)
+
+    evidence = photo[1].file_id
+
+    updateRequestLog(
+        latestTicket.requestID,
+        requestEvidencePhoto=evidence,
+        isEvidenceHasPhoto=True,
+    )
+
+    logger.info("GBB evidence from %s: %s", user.first_name, photo)
+    await update.message.reply_text(
+        "I see! Please be patient and wait for admin's review. ",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    await postSubmissionAction(user, bot)
+
     return ConversationHandler.END
 
+async def skip_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    bot = context.bot
+    user = update.message.from_user
+    logger.info("User %s did not send a photo.", user.first_name)
 
-async def button(update: Update, context: ContextTypes.DEFAULT_TYPE, bot=None) -> None:
+    await postSubmissionAction(user, bot)
+
+    await update.message.reply_text(
+        "I see! Please be patient and wait for admin's review. "
+    )
+
+    return ConversationHandler.END
+
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    bot = context.bot
     query = update.callback_query
+    handler = query.from_user
+
     action, ticketID = query.data.split("_")[0], query.data.split("_")[1]
     ticketContext = getTicketContext(query.data.split("_")[-1])
     closeRequest(ticketID, tickerResult=action)
+    
+    updateRequestLog(
+        ticketID,
+        handler=handler.id,
+    )
+
     await query.answer()
 
-    await query.edit_message_text(text=f"Request ID: {ticketID} has been {action}.")
+    if ticketContext.isEvidenceHasPhoto.all():
+        await query.edit_message_caption(
+            caption=f"Request ID: {ticketID} has been {action} by {handler.mention_html()}.",
+            parse_mode='HTML',
+        )
+    else:
+        await query.edit_message_text(
+            text=f"Request ID: {ticketID} has been {action} by {handler.mention_html()}.",
+            parse_mode='HTML',
+        )
+
     await bot.send_message(
         ticketContext["requestMessageID"].values[0],
         f"Your Request with ID: {ticketID} has been {action}.",
     )
 
+async def buttonForReport(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    bot = context.bot
+    query = update.callback_query
+    handler = query.from_user
+
+    query_data = query.data
+
+    action = query_data.split("_")[0]
+    chat_id = query_data.split("_")[1]
+    message_id = query_data.split("_")[2]
+
+    await query.answer()
+
+    await query.edit_message_text(
+            text=f"Request has been {action} by {handler.mention_html()}.",
+            parse_mode='HTML',
+        )
+    emoji = u'✅' if action == "processed" else u"❌"
+    await bot.edit_message_text(
+        f"Request Status: {emoji} {action}.",
+        chat_id=chat_id,
+        message_id=message_id,
+    )
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancels and ends the conversation."""
@@ -603,24 +736,31 @@ def main() -> None:
     """Run the bot."""
     # Create the Application and pass it your bot's token.
     application = Application.builder().token(os.environ["BOT_TOKEN"]).build()
+
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("report", report))
     application.add_handler(CommandHandler("setAdmin", setAdmin))
     application.add_handler(CommandHandler("revokeAdmin", revokeAdmin))
     application.add_handler(CommandHandler("isAdmin", isAdmin))
     application.add_handler(CommandHandler("set_headquarter", setHeadquarter))
     application.add_handler(CommandHandler("showRemainRequest", showRemainRequest))
-    partialEvidence = partial(evidence, bot=application.bot)
-    partialButton = partial(button, bot=application.bot)
+    
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("submit", submit)],
         states={
             GBBTYPE: [MessageHandler(filters.Regex("^(Spam|Harassment)$"), gbbtype)],
-            EVIDENCE: [MessageHandler(filters.TEXT | filters.PHOTO, partialEvidence)],
+            EVIDENCE: [MessageHandler(filters.TEXT, evidenceText)],
+            EVIDENCE_PHOTO: [
+                MessageHandler(filters.PHOTO, evidencePhoto),
+                CommandHandler("skip", skip_photo)
+            ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
+        # entry_points=[],
     )
-    application.add_handler(CallbackQueryHandler(partialButton))
+    application.add_handler(CallbackQueryHandler(button, pattern="^(processed|rejected)_\w{16}"))
+    application.add_handler(CallbackQueryHandler(buttonForReport, pattern="^(processed|rejected)_\-\d.*_\d.*$"))
 
     application.add_handler(conv_handler)
 
