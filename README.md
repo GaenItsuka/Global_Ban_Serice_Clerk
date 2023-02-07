@@ -27,7 +27,7 @@ python setup.py install --user
 Please export your bot token as environment variable before running the bot:
 
 ```
-eport BOT_TOKEN=<your bot token>
+export BOT_TOKEN=<your bot token>
 ```
 
 After the bot token is ready, you may start the bot with your user ID:
