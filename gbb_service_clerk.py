@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from datetime import datetime
 from telegram import __version__ as TG_VER
-from functools import partial
-from io import StringIO
+# from functools import partial
+# from io import StringIO
 
 
 from telegram import (
