@@ -1,4 +1,4 @@
-# Global_Ban_Serice_Clerk
+# Global_Ban_Service_Clerk
 A telegram bot to process global ban request.
 
 ## Installation
@@ -32,5 +32,5 @@ export BOT_TOKEN=<your bot token>
 
 After the bot token is ready, you may start the bot with your user ID:
 ```
-python -m Global_Ban_Serice_Clerk --ownerID <your telegram user ID>
+python -m Global_Ban_Service_Clerk --ownerID <your telegram user ID>
 ```
