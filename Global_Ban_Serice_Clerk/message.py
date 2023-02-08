@@ -35,7 +35,7 @@ async def gbbtype(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     logger.info("GBB type of request from %s: %s", user.first_name, update.message.text)
     await update.message.reply_text(
-        "I see! Please send me an evidence, " "so I know what happend to you.",
+        "I see! Please send me an evidence, " "so I know what happened to you.",
         reply_markup=ReplyKeyboardRemove(),
     )
 
@@ -81,7 +81,7 @@ async def postSubmissionAction(user, bot):
         f"A new GBB request ticket with ID: {completeRequest.requestID} received! \n"
         rf"The user who submitted the request: {user.mention_html()}. "
         f"\nThe type of GBB request: {completeRequest.requestType}. \n"
-        rf"Evidende: {completeRequest.requestEvidence}."
+        rf"Evidence: {completeRequest.requestEvidence}."
     )
     if completeRequest.isEvidenceHasPhoto:
         await bot.send_photo(
