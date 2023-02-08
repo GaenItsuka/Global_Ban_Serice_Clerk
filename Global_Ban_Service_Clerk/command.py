@@ -150,7 +150,10 @@ async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if replied_message is not None and context.args != []:
         comment = "_".join(context.args)
         mesesage = (
-            rf"User: {sender.mention_html()} has report a GBB reuqest in {chat.mention_html()}."
+            rf"User: {sender.mention_html()} has reported a GBB reuqest in {chat.mention_html()}."
+            "\n"
+            rf"Reported user: {replied_user.mention_html()}(<pre>{replied_user.id}</pre>)"
+            "\n"
             rf"Message link: {replied_message.link}"
             f"\nComment: {comment}."
         )
