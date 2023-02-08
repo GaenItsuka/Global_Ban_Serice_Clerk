@@ -2,7 +2,7 @@ import os
 import logging
 import click
 import sys
-from Global_Ban_Serice_Clerk import (
+from Global_Ban_Service_Clerk import (
     message,
     command,
     callbackQuery,
