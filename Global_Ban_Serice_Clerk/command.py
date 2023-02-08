@@ -66,7 +66,7 @@ async def showRemainRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                     f"Request ticket with ID: {_dict['requestID']} received! \n"
                     rf"The user who submitted the request: {user_submit.mention_html()}. "
                     f"\nThe type of GBB request: {_dict['requestType']}. \n"
-                    rf"Evidende: {_dict['requestEvidence']}."
+                    rf"Evidence: {_dict['requestEvidence']}."
                 )
                 if _dict["isEvidenceHasPhoto"]:
                     await update.message.reply_photo(
