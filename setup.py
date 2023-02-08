@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="Global_Ban_Serice_Clerk",
+    name="Global_Ban_Service_Clerk",
     version="0.8.0",
     author="Gaen Itsuka",
     author_email="",
