@@ -55,7 +55,7 @@ def main(ownerID) -> None:
             GBBTYPE: [
                 MessageHandler(filters.Regex("^(Spam|Harassment|Test)$"), message.gbbtype)
             ],
-            EVIDENCE: [MessageHandler(filters.TEXT & (filters.COMMAND), message.evidenceText)],
+            EVIDENCE: [MessageHandler(filters.TEXT & (~filters.COMMAND), message.evidenceText)],
             EVIDENCE_PHOTO: [
                 MessageHandler(filters.PHOTO, message.evidencePhoto),
                 CommandHandler("skip", message.skip_photo),
