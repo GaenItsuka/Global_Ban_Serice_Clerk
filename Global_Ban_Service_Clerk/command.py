@@ -1,6 +1,6 @@
 import toml
 import secrets
-
+import logging
 import pandas as pd
 
 from telegram import (
@@ -33,10 +33,12 @@ from .utils import (
     deleteAdminLog,
 )
 
+logger = logging.getLogger(__name__)
 
 async def showRemainRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.effective_user
     if checkIsAdmin(user.id):
+        logger.info(f"Admin: {user.full_name}({user.id}) request the list of remaining requests.")
         remainRequestDF = fetchRemainRequest()
 
         if remainRequestDF.empty:
@@ -82,6 +84,7 @@ async def showRemainRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                         reply_markup=reply_markup,
                     )
     else:
+        logger.warning(f"User: {user.full_name}({user.id}) is trying to access the list of remaining requests.")
         await update.message.reply_html("You are not permit to do this.")
 
 
@@ -107,12 +110,16 @@ async def setAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
         if vipOption in ["VIP", "GENERAL"]:
             if checkIsVIP(sender.id):
+                logger.info(f"VIP: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id}).")
                 isVIP = True if vipOption == "VIP" else False
                 createAdminLog(replied_user.id, isVIP)
                 message = rf"User: {replied_user.mention_html()} has been configured as a administrator."
+                logger.info(f"VIP: {sender.full_name}({sender.id}) has granted the permission to {replied_user.full_name}({replied_user.id}).")
             else:
+                logger.warning(f"User: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id}).")
                 message = "You are not permit to do this."
         else:
+            logger.warning(f"User: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id}).")
             message = "No valid option provided. Please check again!"
     else:
         message = f"No option provided. Please check again!"
@@ -127,11 +134,14 @@ async def revokeAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
     if checkIsVIP(sender.id) and not checkIsOwner(replied_user.id):
         try:
+            logger.warning(f"Admin: {sender.full_name}({sender.id}) is trying to revoke the permission of {replied_user.full_name}({replied_user.id}).")
             deleteAdminLog(replied_user.id)
             message = rf"User: {replied_user.mention_html()} has been revoked."
         except Exception as e:
+            logger.warning(f"An error occured when admin: {sender.full_name}({sender.id}) is trying to revoke the permission of {replied_user.full_name}({replied_user.id}).")
             message = f"An error occured: {e}."
     elif checkIsOwner(replied_user.id):
+        logger.warning(f"User: {sender.full_name}({sender.id}) is trying to revoke the permission of {replied_user.full_name}({replied_user.id}).")
         message = "Owner is not able to revoke. Your action has been recorded."
     else:
         message = "You are not permit to do this."
@@ -148,6 +158,7 @@ async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat = update.effective_chat
 
     if replied_message is not None and context.args != []:
+        logger.info(f"User: {sender.first_name}({sender.id}) has reported a GBB request in chat: {chat.full_name}({chat.id}).")
         comment = "_".join(context.args)
         mesesage = (
             rf"User: {sender.mention_html()} has reported a GBB reuqest in {chat.mention_html()}."
@@ -207,19 +218,32 @@ async def setHeadquarter(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     if checkIsVIP(user.id):
         try:
+            logger.warning(f"Admin: {user.full_name}({user.id}) is trying to change the HQ.")
             setHQIndex(chat.id)
             await update.message.reply_html("Complete!")
+            logger.warning(f"The HQ group has been changed by admin: {user.full_name}({user.id}).")
+
         except Exception as e:
             await update.message.reply_html(f"An error occured: {e}.")
+            log_message = (
+                f"An error occured when admin: {user.full_name}({user.id}) is trying to change the HQ.\n"
+                f"Exception: {e}"
+            )
+            logger.warning(log_message)
+
     else:
+        logger.info(f"User: {user.first_name}({user.id}) is trying to change the HQ.")
         await update.message.reply_html("You are not permit to do this.")
 
 
 async def submit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Starts the conversation and asks the user about their requests."""
     ticketID = secrets.token_hex(8)
+
     user = update.message.from_user
     chat = update.effective_chat
+
+    logger.info(f"User: {user.first_name}({user.id}) submit a new ticket with ID: {ticketID}")
 
     createRequestLog(
         ticketID,
