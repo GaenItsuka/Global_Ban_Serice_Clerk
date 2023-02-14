@@ -1,7 +1,8 @@
 import os
 import logging
-import click
 import sys
+import click
+
 from Global_Ban_Service_Clerk import (
     message,
     command,
@@ -18,6 +19,7 @@ from telegram.ext import (
 )
 
 logging.basicConfig(
+    filename='GBSC_bot.log',
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
