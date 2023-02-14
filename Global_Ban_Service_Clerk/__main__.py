@@ -53,7 +53,7 @@ def main(ownerID) -> None:
         entry_points=[CommandHandler("submit", command.submit)],
         states={
             GBBTYPE: [
-                MessageHandler(filters.Regex("^(Spam|Harassment)$"), message.gbbtype)
+                MessageHandler(filters.Regex("^(Spam|Harassment|Test)$"), message.gbbtype)
             ],
             EVIDENCE: [MessageHandler(filters.TEXT, message.evidenceText)],
             EVIDENCE_PHOTO: [
