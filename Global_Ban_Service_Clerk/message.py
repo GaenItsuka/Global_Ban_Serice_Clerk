@@ -33,7 +33,8 @@ async def gbbtype(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         ticketType=update.message.text,
     )
 
-    logger.info("GBB type of request from %s: %s", user.first_name, update.message.text)
+    logger.info(f"User: {user.first_name}({user.id}) update the context of ticket(ID: {latestTicket.requestID}). Gbb type: {update.message.text}")
+
     await update.message.reply_text(
         "I see! Please send me an evidence, " "so I know what happened to you.",
         reply_markup=ReplyKeyboardRemove(),
@@ -47,6 +48,8 @@ async def evidenceText(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     user = update.message.from_user
     text = update.message.text
     latestTicket = getLatestTicket(user.id)
+
+    logger.info(f"User: {user.first_name}({user.id}) update the context of ticket(ID: {latestTicket.requestID}). Text evidence: {text}")
 
     updateRequestLog(
         latestTicket.requestID,
@@ -65,6 +68,7 @@ async def evidenceText(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 async def postSubmissionAction(user, bot):
     HQIndex = getHQIndex()
     completeRequest = getLatestTicket(user.id)
+
     keyboard = [
         [
             InlineKeyboardButton(
@@ -77,12 +81,16 @@ async def postSubmissionAction(user, bot):
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
+    
     message_template = (
         f"A new GBB request ticket with ID: {completeRequest.requestID} received! \n"
         rf"The user who submitted the request: {user.mention_html()}. "
         f"\nThe type of GBB request: {completeRequest.requestType}. \n"
         rf"Evidence: {completeRequest.requestEvidence}."
     )
+
+    logger.info(f"Preparing report message for ticket(ID: {completeRequest.requestID}).")
+
     if completeRequest.isEvidenceHasPhoto:
         await bot.send_photo(
             HQIndex,
@@ -109,6 +117,8 @@ async def evidencePhoto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
     evidence = photo[1].file_id
 
+    logger.info(f"User: {user.first_name}({user.id}) update the context of ticket(ID: {latestTicket.requestID}). Photo evidence file id: {evidence}")
+
     updateRequestLog(
         latestTicket.requestID,
         requestEvidencePhoto=evidence,
@@ -129,7 +139,8 @@ async def evidencePhoto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 async def skip_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     bot = context.bot
     user = update.message.from_user
-    logger.info("User %s did not send a photo.", user.first_name)
+
+    logger.info(f"User: {user.first_name}({user.id}) didn't send a photo evidence.")
 
     await postSubmissionAction(user, bot)
 
@@ -143,7 +154,9 @@ async def skip_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancels and ends the conversation."""
     user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
+
+    logger.info(f"User: {user.first_name}({user.id}) canceled the submission..")
+
     await update.message.reply_text("Bye!", reply_markup=ReplyKeyboardRemove())
 
     return ConversationHandler.END
