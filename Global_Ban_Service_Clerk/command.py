@@ -194,7 +194,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     start_message = (
         rf"Hi {user.mention_html()}! "
         "I am a bot that can help you to submit a gbb request to administrators.\n"
-        "Use <a>/submit</a> a ticket."
+        "Use <a>/submit</a> to submit a ticket."
     )
     await update.message.reply_html(start_message)
 
