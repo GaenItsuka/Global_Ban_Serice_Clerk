@@ -252,7 +252,7 @@ async def submit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         ticketMessageID=chat.id,
     )
 
-    reply_keyboard = [["Spam", "Harassment", "test"]]
+    reply_keyboard = [["Spam", "Harassment", "Test"]]
 
     submitResponse = (
         "Hi! Please choose the type of gbb you want to submit.\n"
