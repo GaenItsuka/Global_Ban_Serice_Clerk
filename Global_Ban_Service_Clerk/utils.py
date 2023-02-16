@@ -338,8 +338,10 @@ def checkIsVIP(UID):
     return result
 
 
-def checkIsOwner():
+def checkIsOwner(UID):
+
     conn, cursor = createConnection(DBName="Admin.db")
     response = cursor.execute("SELECT UID FROM Admin WHERE CLASS = 'owner';").fetchall()
     onwer = response[0]
-    return onwer
+    isOwner = int(onwer) == UID
+    return isOwner
