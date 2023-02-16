@@ -270,3 +270,60 @@ async def submit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     )
 
     return 0
+
+async def showRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    
+    if context.args != []:
+        ticketID = context.args[0]
+        remainRequestDF = fetchRemainRequest()
+        
+        desiredRequest = remainRequestDF.query("requestID == ticketID")
+
+        _dict = desiredRequest.to_dict("records")[0]
+
+        user_submit = User(
+            _dict["requestUser"], _dict["requestUserName"], False
+        )
+        
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "Done", callback_data=f"processed_{_dict['requestID']}"
+                ),
+                InlineKeyboardButton(
+                    "Reject", callback_data=f"rejected_{_dict['requestID']}"
+                ),
+            ]
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        message_template = (
+            f"Request ticket with ID: {_dict['requestID']} received! \n"
+            rf"The user who submitted the request: {user_submit.mention_html()}. "
+            f"\nThe type of GBB request: {_dict['requestType']}. \n"
+            rf"Evidence: {_dict['requestEvidence']}."
+        )
+        if _dict["isEvidenceHasPhoto"]:
+            await update.message.reply_photo(
+                photo=str(_dict["requestEvidencePhoto"]),
+                parse_mode="HTML",
+                caption=message_template,
+                reply_markup=reply_markup,
+            )
+        else:
+            await update.message.reply_text(
+                message_template,
+                parse_mode="HTML",
+                reply_markup=reply_markup,
+            )
+
+    elif len(context.args) > 1:
+        await update.message.reply_html(
+            'Cannot search more than one request at the same time. Please check again.',
+        )
+    else:
+        await update.message.reply_html(
+            'No argument found. Abort!',
+        )
+
+    
