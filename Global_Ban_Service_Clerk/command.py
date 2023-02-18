@@ -67,39 +67,6 @@ async def showRemainRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             await update.message.reply_html(
                 message,
             )
-            
-                # keyboard = [
-                #     [
-                #         InlineKeyboardButton(
-                #             "Done", callback_data=f"processed_{_dict['requestID']}"
-                #         ),
-                #         InlineKeyboardButton(
-                #             "Reject", callback_data=f"rejected_{_dict['requestID']}"
-                #         ),
-                #     ]
-                # ]
-
-                # reply_markup = InlineKeyboardMarkup(keyboard)
-
-                # message_template = (
-                #     f"Request ticket with ID: {_dict['requestID']} received! \n"
-                #     rf"The user who submitted the request: {user_submit.mention_html()}. "
-                #     f"\nThe type of GBB request: {_dict['requestType']}. \n"
-                #     rf"Evidence: {_dict['requestEvidence']}."
-                # )
-                # if _dict["isEvidenceHasPhoto"]:
-                #     await update.message.reply_photo(
-                #         photo=str(_dict["requestEvidencePhoto"]),
-                #         parse_mode="HTML",
-                #         caption=message_template,
-                #         reply_markup=reply_markup,
-                #     )
-                # else:
-                #     await update.message.reply_text(
-                #         message_template,
-                #         parse_mode="HTML",
-                #         reply_markup=reply_markup,
-                #     )
     else:
         logger.warning(f"User: {user.full_name}({user.id}) is trying to access the list of remaining requests.")
         await update.message.reply_html("You are not permit to do this.")
