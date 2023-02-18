@@ -45,6 +45,7 @@ def main(ownerID) -> None:
     application.add_handler(CommandHandler("revokeAdmin", command.revokeAdmin))
     application.add_handler(CommandHandler("isAdmin", command.isAdmin))
     application.add_handler(CommandHandler("set_headquarter", command.setHeadquarter))
+    application.add_handler(CommandHandler("showRequest", command.showRequest))
     application.add_handler(
         CommandHandler("showRemainRequest", command.showRemainRequest)
     )
