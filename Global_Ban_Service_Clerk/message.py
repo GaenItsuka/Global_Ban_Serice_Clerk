@@ -83,7 +83,7 @@ async def postSubmissionAction(user, bot):
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     message_template = (
-        f"A new GBB request ticket with ID: {completeRequest.requestID} received! \n"
+        f"A new GBB request ticket with ID: <pre>{completeRequest.requestID}</pre> received! \n"
         rf"The user who submitted the request: {user.mention_html()}. "
         f"\nThe type of GBB request: {completeRequest.requestType}. \n"
         rf"Evidence: {completeRequest.requestEvidence}."
