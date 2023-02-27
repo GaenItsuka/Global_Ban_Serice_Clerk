@@ -44,10 +44,11 @@ def main(ownerID) -> None:
     application.add_handler(CommandHandler("setAdmin", command.setAdmin))
     application.add_handler(CommandHandler("revokeAdmin", command.revokeAdmin))
     application.add_handler(CommandHandler("isAdmin", command.isAdmin))
-    application.add_handler(CommandHandler("set_headquarter", command.setHeadquarter))
+    application.add_handler(CommandHandler("setHeadquarter", command.setHeadquarter))
     application.add_handler(CommandHandler("showRequest", command.showRequest))
+    application.add_handler(CommandHandler("help", command.help))
     application.add_handler(
-        CommandHandler("showRemainRequest", command.showRemainRequest)
+        CommandHandler("showRemainRequests", command.showRemainRequests)
     )
 
     conv_handler = ConversationHandler(
