@@ -54,7 +54,6 @@ def checkENV(mode='not public'):
                 else:
                     pass
             elif (mode == 'Pubic Only') and (replied_message is not None):
-                print(1)
                 if replied_message.chat.id < 0:
                     return await func(*args, **kargs)
                 else:
