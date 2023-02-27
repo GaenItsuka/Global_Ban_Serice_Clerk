@@ -36,6 +36,34 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
+
+def checkENV(mode='not public'):
+    def check(func):
+        async def wraps(*args, **kargs):
+            chat = args[0].effective_chat
+            HQIndex = getHQIndex()
+            replied_message = args[0].message.reply_to_message
+            if mode == 'Not public':
+                if chat.id > 0:
+                    return await func(*args, **kargs)
+                else:
+                    return await args[0].message.reply_text("This function cannot operate in public chat.")
+            elif mode == 'HQ Only':
+                if chat.id == HQIndex:
+                    return await func(*args, **kargs)
+                else:
+                    pass
+            elif (mode == 'Pubic Only') and (replied_message is not None):
+                print(1)
+                if replied_message.chat.id < 0:
+                    return await func(*args, **kargs)
+                else:
+                    return await args[0].message.reply_text("This function cannot operate in private chat.")
+                
+        return wraps
+    return check
+
+@checkENV(mode='HQ Only')
 async def showRemainRequests(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.effective_user
     if checkIsAdmin(user.id):
@@ -75,6 +103,7 @@ async def showRemainRequests(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_html("You are not permit to do this.")
 
 
+@checkENV(mode='HQ Only')
 async def isAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     replied_message = update.message.reply_to_message
     replied_user = replied_message.from_user
@@ -86,7 +115,7 @@ async def isAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await update.message.reply_html(message)
 
-
+@checkENV(mode='HQ Only')
 async def setAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     replied_message = update.message.reply_to_message
     replied_user = replied_message.from_user
@@ -121,7 +150,7 @@ async def setAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await update.message.reply_html(message)
 
-
+@checkENV(mode='HQ Only')
 async def revokeAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     replied_message = update.message.reply_to_message
     replied_user = replied_message.from_user
@@ -149,7 +178,7 @@ async def revokeAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
     await update.message.reply_html(message)
 
-
+@checkENV(mode='Pubic Only')
 async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     HQIndex = getHQIndex()
     bot = context.bot
@@ -205,12 +234,21 @@ async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Send a message when the command /start is issued."""
     user = update.message.from_user
-    start_message = (
-        rf"Hi {user.mention_html()}! "
-        "I am a bot that can help you to submit a gbb request to administrators.\n"
-        "Please send me a private message for a submission."
-        "Use <a>/submit</a> in private message to submit a ticket."
-    )
+    chat = update.effective_chat
+
+    if chat.id < 0:
+        start_message = (
+            rf"Hi {user.mention_html()}! "
+            "I am a bot that can help you to submit a gbb request to administrators.\n"
+            "Please send me a private message for a submission.\n"
+            "Or you may use <pre>/report</pre> with a reason to report a message."
+        )
+    else:
+        start_message = (
+            rf"Hi {user.mention_html()}! "
+            "I am a bot that can help you to submit a gbb request to administrators.\n"
+            "Use <a>/submit</a> to submit a ticket."
+        )
     await update.message.reply_html(start_message)
 
 
@@ -243,52 +281,47 @@ async def setHeadquarter(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         logger.info(f"User: {user.first_name}({user.id}) is trying to change the HQ.")
         await update.message.reply_html("You are not permit to do this.")
 
-
+@checkENV(mode='Not public')
 async def submit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Starts the conversation and asks the user about their requests."""
+    ticketID = secrets.token_hex(8)
+
+    user = update.message.from_user
     chat = update.effective_chat
 
-    if chat.id > 0:
-        ticketID = secrets.token_hex(8)
+    logger.info(
+        f"User: {user.first_name}({user.id}) submit a new ticket with ID: {ticketID}"
+    )
 
-        user = update.message.from_user
-        chat = update.effective_chat
+    createRequestLog(
+        ticketID,
+        ticketUser=user.id,
+        ticketUserName=user.first_name,
+        ticketMessageID=chat.id,
+    )
 
-        logger.info(
-            f"User: {user.first_name}({user.id}) submit a new ticket with ID: {ticketID}"
-        )
+    reply_keyboard = [["Spam", "Harassment", "Test"]]
 
-        createRequestLog(
-            ticketID,
-            ticketUser=user.id,
-            ticketUserName=user.first_name,
-            ticketMessageID=chat.id,
-        )
+    submitResponse = (
+        "Hi! Please choose the type of gbb you want to submit.\n"
+        rf"To cancel the submission, please use <a>/cancel</a> command."
+    )
 
-        reply_keyboard = [["Spam", "Harassment", "Test"]]
+    await update.message.reply_text(
+        submitResponse,
+        reply_markup=ReplyKeyboardMarkup(
+            reply_keyboard,
+            one_time_keyboard=True,
+            input_field_placeholder="What kinds of gbb request?",
+        ),
+        parse_mode="HTML",
+    )
 
-        submitResponse = (
-            "Hi! Please choose the type of gbb you want to submit.\n"
-            rf"To cancel the submission, please use <a>/cancel</a> command."
-        )
+    return 0
 
-        await update.message.reply_text(
-            submitResponse,
-            reply_markup=ReplyKeyboardMarkup(
-                reply_keyboard,
-                one_time_keyboard=True,
-                input_field_placeholder="What kinds of gbb request?",
-            ),
-            parse_mode="HTML",
-        )
-
-        return 0
-    else:
-        message = rf"<pre>/submit</pre> is not available in public group."
-        await update.message.reply_html(message)
-
-
+@checkENV(mode='HQ Only')
 async def showRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+
     if context.args != []:
         ticketID = context.args[0]
         remainRequestDF = fetchRemainRequest()
