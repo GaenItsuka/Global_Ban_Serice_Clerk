@@ -36,33 +36,38 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
-
-def checkENV(mode='not public'):
+def checkENV(mode="not public"):
     def check(func):
         async def wraps(*args, **kargs):
             chat = args[0].effective_chat
             HQIndex = getHQIndex()
             replied_message = args[0].message.reply_to_message
-            if mode == 'Not public':
+            if mode == "Not public":
                 if chat.id > 0:
                     return await func(*args, **kargs)
                 else:
-                    return await args[0].message.reply_text("This function cannot operate in public chat.")
-            elif mode == 'HQ Only':
+                    return await args[0].message.reply_text(
+                        "This function cannot operate in public chat."
+                    )
+            elif mode == "HQ Only":
                 if chat.id == HQIndex:
                     return await func(*args, **kargs)
                 else:
                     pass
-            elif (mode == 'Pubic Only') and (replied_message is not None):
+            elif (mode == "Pubic Only") and (replied_message is not None):
                 if replied_message.chat.id < 0:
                     return await func(*args, **kargs)
                 else:
-                    return await args[0].message.reply_text("This function cannot operate in private chat.")
-                
+                    return await args[0].message.reply_text(
+                        "This function cannot operate in private chat."
+                    )
+
         return wraps
+
     return check
 
-@checkENV(mode='HQ Only')
+
+@checkENV(mode="HQ Only")
 async def showRemainRequests(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.effective_user
     if checkIsAdmin(user.id):
@@ -102,7 +107,7 @@ async def showRemainRequests(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_html("You are not permit to do this.")
 
 
-@checkENV(mode='HQ Only')
+@checkENV(mode="HQ Only")
 async def isAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     replied_message = update.message.reply_to_message
     replied_user = replied_message.from_user
@@ -114,7 +119,8 @@ async def isAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await update.message.reply_html(message)
 
-@checkENV(mode='HQ Only')
+
+@checkENV(mode="HQ Only")
 async def setAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     replied_message = update.message.reply_to_message
     replied_user = replied_message.from_user
@@ -149,7 +155,8 @@ async def setAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await update.message.reply_html(message)
 
-@checkENV(mode='HQ Only')
+
+@checkENV(mode="HQ Only")
 async def revokeAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     replied_message = update.message.reply_to_message
     replied_user = replied_message.from_user
@@ -177,7 +184,8 @@ async def revokeAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
     await update.message.reply_html(message)
 
-@checkENV(mode='Pubic Only')
+
+@checkENV(mode="Pubic Only")
 async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     HQIndex = getHQIndex()
     bot = context.bot
@@ -280,7 +288,8 @@ async def setHeadquarter(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         logger.info(f"User: {user.first_name}({user.id}) is trying to change the HQ.")
         await update.message.reply_html("You are not permit to do this.")
 
-@checkENV(mode='Not public')
+
+@checkENV(mode="Not public")
 async def submit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Starts the conversation and asks the user about their requests."""
     ticketID = secrets.token_hex(8)
@@ -318,9 +327,9 @@ async def submit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     return 0
 
-@checkENV(mode='HQ Only')
-async def showRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
+@checkENV(mode="HQ Only")
+async def showRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if context.args != []:
         ticketID = context.args[0]
         remainRequestDF = fetchRemainRequest()
