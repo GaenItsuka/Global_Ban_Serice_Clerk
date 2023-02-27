@@ -35,10 +35,13 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-async def showRemainRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+
+async def showRemainRequests(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.effective_user
     if checkIsAdmin(user.id):
-        logger.info(f"Admin: {user.full_name}({user.id}) request the list of remaining requests.")
+        logger.info(
+            f"Admin: {user.full_name}({user.id}) request the list of remaining requests."
+        )
         remainRequestDF = fetchRemainRequest()
 
         if remainRequestDF.empty:
@@ -54,10 +57,8 @@ async def showRemainRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                     _dict["requestUser"], _dict["requestUserName"], False
                 )
 
-                _message_context = (
-                    rf"▪RequstID: <pre>{_dict['requestID']}</pre>, 👤Submitee: {user_submit.mention_html()}"
-                )
-                
+                _message_context = rf"▪RequstID: <pre>{_dict['requestID']}</pre>, 👤Submitee: {user_submit.mention_html()}"
+
                 message_context.append(_message_context)
 
             message_context.append(
@@ -68,7 +69,9 @@ async def showRemainRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                 message,
             )
     else:
-        logger.warning(f"User: {user.full_name}({user.id}) is trying to access the list of remaining requests.")
+        logger.warning(
+            f"User: {user.full_name}({user.id}) is trying to access the list of remaining requests."
+        )
         await update.message.reply_html("You are not permit to do this.")
 
 
@@ -94,16 +97,24 @@ async def setAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
         if vipOption in ["VIP", "GENERAL"]:
             if checkIsVIP(sender.id):
-                logger.info(f"VIP: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id}).")
+                logger.info(
+                    f"VIP: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id})."
+                )
                 isVIP = True if vipOption == "VIP" else False
                 createAdminLog(replied_user.id, isVIP)
                 message = rf"User: {replied_user.mention_html()} has been configured as a administrator."
-                logger.info(f"VIP: {sender.full_name}({sender.id}) has granted the permission to {replied_user.full_name}({replied_user.id}).")
+                logger.info(
+                    f"VIP: {sender.full_name}({sender.id}) has granted the permission to {replied_user.full_name}({replied_user.id})."
+                )
             else:
-                logger.warning(f"User: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id}).")
+                logger.warning(
+                    f"User: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id})."
+                )
                 message = "You are not permit to do this."
         else:
-            logger.warning(f"User: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id}).")
+            logger.warning(
+                f"User: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id})."
+            )
             message = "No valid option provided. Please check again!"
     else:
         message = f"No option provided. Please check again!"
@@ -118,14 +129,20 @@ async def revokeAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
     if checkIsVIP(sender.id) and not checkIsOwner(replied_user.id):
         try:
-            logger.warning(f"Admin: {sender.full_name}({sender.id}) is trying to revoke the permission of {replied_user.full_name}({replied_user.id}).")
+            logger.warning(
+                f"Admin: {sender.full_name}({sender.id}) is trying to revoke the permission of {replied_user.full_name}({replied_user.id})."
+            )
             deleteAdminLog(replied_user.id)
             message = rf"User: {replied_user.mention_html()} has been revoked."
         except Exception as e:
-            logger.warning(f"An error occured when admin: {sender.full_name}({sender.id}) is trying to revoke the permission of {replied_user.full_name}({replied_user.id}).")
+            logger.warning(
+                f"An error occured when admin: {sender.full_name}({sender.id}) is trying to revoke the permission of {replied_user.full_name}({replied_user.id})."
+            )
             message = f"An error occured: {e}."
     elif checkIsOwner(replied_user.id):
-        logger.warning(f"User: {sender.full_name}({sender.id}) is trying to revoke the permission of {replied_user.full_name}({replied_user.id}).")
+        logger.warning(
+            f"User: {sender.full_name}({sender.id}) is trying to revoke the permission of {replied_user.full_name}({replied_user.id})."
+        )
         message = "Owner is not able to revoke. Your action has been recorded."
     else:
         message = "You are not permit to do this."
@@ -142,7 +159,9 @@ async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat = update.effective_chat
 
     if replied_message is not None and context.args != []:
-        logger.info(f"User: {sender.first_name}({sender.id}) has reported a GBB request in chat: {chat.full_name}({chat.id}).")
+        logger.info(
+            f"User: {sender.first_name}({sender.id}) has reported a GBB request in chat: {chat.full_name}({chat.id})."
+        )
         comment = "_".join(context.args)
         mesesage = (
             rf"User: {sender.mention_html()} has reported a GBB reuqest in {chat.mention_html()}."
@@ -189,7 +208,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     start_message = (
         rf"Hi {user.mention_html()}! "
         "I am a bot that can help you to submit a gbb request to administrators.\n"
-        "Use <a>/submit</a> to submit a ticket."
+        "Please send me a private message for a submission."
+        "Use <a>/submit</a> in private message to submit a ticket."
     )
     await update.message.reply_html(start_message)
 
@@ -202,10 +222,14 @@ async def setHeadquarter(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     if checkIsVIP(user.id):
         try:
-            logger.warning(f"Admin: {user.full_name}({user.id}) is trying to change the HQ.")
+            logger.warning(
+                f"Admin: {user.full_name}({user.id}) is trying to change the HQ."
+            )
             setHQIndex(chat.id)
             await update.message.reply_html("Complete!")
-            logger.warning(f"The HQ group has been changed by admin: {user.full_name}({user.id}).")
+            logger.warning(
+                f"The HQ group has been changed by admin: {user.full_name}({user.id})."
+            )
 
         except Exception as e:
             await update.message.reply_html(f"An error occured: {e}.")
@@ -222,53 +246,59 @@ async def setHeadquarter(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def submit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Starts the conversation and asks the user about their requests."""
-    ticketID = secrets.token_hex(8)
-
-    user = update.message.from_user
     chat = update.effective_chat
 
-    logger.info(f"User: {user.first_name}({user.id}) submit a new ticket with ID: {ticketID}")
+    if chat.id > 0:
+        ticketID = secrets.token_hex(8)
 
-    createRequestLog(
-        ticketID,
-        ticketUser=user.id,
-        ticketUserName=user.first_name,
-        ticketMessageID=chat.id,
-    )
+        user = update.message.from_user
+        chat = update.effective_chat
 
-    reply_keyboard = [["Spam", "Harassment", "Test"]]
+        logger.info(
+            f"User: {user.first_name}({user.id}) submit a new ticket with ID: {ticketID}"
+        )
 
-    submitResponse = (
-        "Hi! Please choose the type of gbb you want to submit.\n"
-        rf"To cancel the submission, please use <a>/cancel</a> command."
-    )
+        createRequestLog(
+            ticketID,
+            ticketUser=user.id,
+            ticketUserName=user.first_name,
+            ticketMessageID=chat.id,
+        )
 
-    await update.message.reply_text(
-        submitResponse,
-        reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard,
-            one_time_keyboard=True,
-            input_field_placeholder="What kinds of gbb request?",
-        ),
-        parse_mode="HTML",
-    )
+        reply_keyboard = [["Spam", "Harassment", "Test"]]
 
-    return 0
+        submitResponse = (
+            "Hi! Please choose the type of gbb you want to submit.\n"
+            rf"To cancel the submission, please use <a>/cancel</a> command."
+        )
+
+        await update.message.reply_text(
+            submitResponse,
+            reply_markup=ReplyKeyboardMarkup(
+                reply_keyboard,
+                one_time_keyboard=True,
+                input_field_placeholder="What kinds of gbb request?",
+            ),
+            parse_mode="HTML",
+        )
+
+        return 0
+    else:
+        message = rf"<pre>/submit</pre> is not available in public group."
+        await update.message.reply_html(message)
+
 
 async def showRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    
     if context.args != []:
         ticketID = context.args[0]
         remainRequestDF = fetchRemainRequest()
-        
+
         desiredRequest = remainRequestDF.query(f"requestID == @ticketID")
 
         _dict = desiredRequest.to_dict("records")[0]
 
-        user_submit = User(
-            _dict["requestUser"], _dict["requestUserName"], False
-        )
-        
+        user_submit = User(_dict["requestUser"], _dict["requestUserName"], False)
+
         keyboard = [
             [
                 InlineKeyboardButton(
@@ -303,11 +333,41 @@ async def showRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
     elif len(context.args) > 1:
         await update.message.reply_html(
-            'Cannot search more than one request at the same time. Please check again.',
+            "Cannot search more than one request at the same time. Please check again.",
         )
     else:
         await update.message.reply_html(
-            'No argument found. Abort!',
+            "No argument found. Abort!",
         )
 
-    
+
+async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user = update.effective_user
+    chat = update.effective_chat
+    HQIndex = getHQIndex()
+    if (checkIsAdmin(user.id) or checkIsVIP(sender.id)) and chat.id == HQIndex:
+        help_msg = (
+            rf"<pre>/setAdmin</pre>: Available for VIP, can assign someone as an administrator."
+            + "\n"
+            rf"<pre>/revokeAdmin</pre>: Available for VIP, can revoke someone's administrator permission."
+            + "\n"
+            rf"<pre>/isAdmin</pre>: Available for everyone, can check someone's administrator permission."
+            + "\n"
+            rf"<pre>/setHeadquarter</pre>: Available for VIP, set a chat as the headquarter of this bot. (Can only set one chat as the HQ at the same time.)"
+            + "\n"
+            rf"<pre>/showRemainRequests</pre>: Available for admin, can show a list of requests that have not been processed."
+            + "\n"
+            rf"<pre>/showRequest</pre>: Available for admin, can check the information of the specific request. A positional argument in need."
+            + "\n"
+        )
+    elif chat.id > 0:
+        help_msg = (
+            rf"Use <pre>/submit</pre> command to start a submission." + "\n"
+            rf"Use <pre>/cancel</pre> command to interrupt a submission." + "\n"
+        )
+    elif chat.id < 0:
+        help_msg = (
+            rf"Use <pre>/report</pre> with reason to report a message. A report without reason will not be proceed."
+            + "\n"
+        )
+    await update.message.reply_html(help_msg)
