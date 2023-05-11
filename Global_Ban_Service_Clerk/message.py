@@ -33,7 +33,9 @@ async def gbbtype(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         ticketType=update.message.text,
     )
 
-    logger.info(f"User: {user.first_name}({user.id}) update the context of ticket(ID: {latestTicket.requestID}). Gbb type: {update.message.text}")
+    logger.info(
+        f"User: {user.first_name}({user.id}) update the context of ticket(ID: {latestTicket.requestID}). Gbb type: {update.message.text}"
+    )
 
     await update.message.reply_text(
         "I see! Please send me an evidence, " "so I know what happened to you.",
@@ -49,7 +51,9 @@ async def evidenceText(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     text = update.message.text
     latestTicket = getLatestTicket(user.id)
 
-    logger.info(f"User: {user.first_name}({user.id}) update the context of ticket(ID: {latestTicket.requestID}). Text evidence: {text}")
+    logger.info(
+        f"User: {user.first_name}({user.id}) update the context of ticket(ID: {latestTicket.requestID}). Text evidence: {text}"
+    )
 
     updateRequestLog(
         latestTicket.requestID,
@@ -81,7 +85,7 @@ async def postSubmissionAction(user, bot):
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-    
+
     message_template = (
         f"A new GBB request ticket with ID: <pre>{completeRequest.requestID}</pre> received! \n"
         rf"The user who submitted the request: {user.mention_html()}. "
@@ -89,7 +93,9 @@ async def postSubmissionAction(user, bot):
         rf"Evidence: {completeRequest.requestEvidence}."
     )
 
-    logger.info(f"Preparing report message for ticket(ID: {completeRequest.requestID}).")
+    logger.info(
+        f"Preparing report message for ticket(ID: {completeRequest.requestID})."
+    )
 
     if completeRequest.isEvidenceHasPhoto:
         await bot.send_photo(
@@ -117,7 +123,9 @@ async def evidencePhoto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
     evidence = photo[1].file_id
 
-    logger.info(f"User: {user.first_name}({user.id}) update the context of ticket(ID: {latestTicket.requestID}). Photo evidence file id: {evidence}")
+    logger.info(
+        f"User: {user.first_name}({user.id}) update the context of ticket(ID: {latestTicket.requestID}). Photo evidence file id: {evidence}"
+    )
 
     updateRequestLog(
         latestTicket.requestID,
