@@ -54,8 +54,12 @@ def main(ownerID) -> None:
 
     # Gbb related commands
     application.add_handler(CommandHandler("gbb", command.GlobanCommand.globalBan))
-    application.add_handler(CommandHandler("enable_gbb", command.GlobanCommand.enableGbb))
-    application.add_handler(CommandHandler("disable_gbb", command.GlobanCommand.disableGbb))
+    application.add_handler(
+        CommandHandler("enable_gbb", command.GlobanCommand.enableGbb)
+    )
+    application.add_handler(
+        CommandHandler("disable_gbb", command.GlobanCommand.disableGbb)
+    )
     application.add_handler(CommandHandler("check_gbb", command.GlobanCommand.checkGbb))
     application.add_handler(
         CommandHandler("addGbbGroup", command.GlobanCommand.addGlobalBanGroup)

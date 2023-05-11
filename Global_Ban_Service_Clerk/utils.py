@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 #
 #               Bacis Utilities
 #
-############################################################    
+############################################################
+
 
 def createDotenv():
+    dotenv.set_key(".env", "HQIndex", "9999999999999999")
+    dotenv.set_key(".env", "enable_gbb", "1")
 
-    dotenv.set_key(".env", "HQIndex", '9999999999999999')
-    dotenv.set_key(".env", "enable_gbb", '1')
-    
 
 def preflightCheck(ownerID):
     chkList = [
@@ -314,17 +314,18 @@ def fetchRemainRequest():
 #
 ############################################################
 
+
 def setHQIndex(chatID):
     dotenv.set_key(".env", "HQIndex", str(chatID))
     # cfg = toml.load("config/config.toml")
     # cfg["Headquarter"]["chatID"] = chatID
     # with open("config/config.toml", "w") as file:
-        # savedCfg = toml.dump(cfg, file)
+    # savedCfg = toml.dump(cfg, file)
 
 
 def getHQIndex():
     config = dotenv.dotenv_values(".env")
-    
+
     # cfg = toml.load("config/config.toml")
     return int(config["HQIndex"])
 
@@ -411,15 +412,18 @@ def checkIsOwner(UID):
     isOwner = int(onwer) == UID
     return isOwner
 
+
 ############################################################
 #
 #               Gbb utilities
 #
 ############################################################
 
+
 def configGbbCommand(option):
     dotenv.set_key(".env", "enable_gbb", option)
 
+
 def checkGbbConfig():
-    config = dotenv.dotenv_values('.env')
-    return bool(int(config['enable_gbb']))
+    config = dotenv.dotenv_values(".env")
+    return bool(int(config["enable_gbb"]))
