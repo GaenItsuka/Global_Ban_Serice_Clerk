@@ -3,6 +3,7 @@ import sys
 import sqlite3
 import toml
 import logging
+import dotenv
 import pandas as pd
 
 from functools import partial
@@ -15,29 +16,34 @@ logger = logging.getLogger(__name__)
 #
 #               Bacis Utilities
 #
-############################################################
+############################################################    
 
+def createDotenv():
+
+    dotenv.set_key(".env", "HQIndex", '9999999999999999')
+    dotenv.set_key(".env", "enable_gbb", '1')
+    
 
 def preflightCheck(ownerID):
     chkList = [
         "gbb.db",
         "GbbRequestDB.db",
         "Admin.db",
-        "config/config.toml",
+        ".env",
     ]
     partialCreateAdminDB = partial(createAdminDB, ownerID=ownerID)
     funcList = [
         createGbbGroupTable,
         createRequestLogTable,
         partialCreateAdminDB,
-        createConfig,
+        createDotenv,
     ]
 
     chkDescription = [
         "Creating DB for Gbb Grouos",
         "Creating DB for request logs.",
         "Creating DB for admin.",
-        "Creating toml file for basic config.",
+        "Creating .env file.",
     ]
     for check, func, description in zip(chkList, funcList, chkDescription):
         if not os.path.exists(check):
@@ -308,28 +314,19 @@ def fetchRemainRequest():
 #
 ############################################################
 
-
-def createConfig():
-    os.makedirs("./config")
-    cfg = """
-    [Headquarter]
-    chatID = 99999999999999
-    """
-    parsedCfg = toml.loads(cfg)
-    with open("config/config.toml", "w") as file:
-        savedCfg = toml.dump(parsedCfg, file)
-
-
 def setHQIndex(chatID):
-    cfg = toml.load("config/config.toml")
-    cfg["Headquarter"]["chatID"] = chatID
-    with open("config/config.toml", "w") as file:
-        savedCfg = toml.dump(cfg, file)
+    dotenv.set_key(".env", "HQIndex", str(chatID))
+    # cfg = toml.load("config/config.toml")
+    # cfg["Headquarter"]["chatID"] = chatID
+    # with open("config/config.toml", "w") as file:
+        # savedCfg = toml.dump(cfg, file)
 
 
 def getHQIndex():
-    cfg = toml.load("config/config.toml")
-    return cfg["Headquarter"]["chatID"]
+    config = dotenv.dotenv_values(".env")
+    
+    # cfg = toml.load("config/config.toml")
+    return int(config["HQIndex"])
 
 
 ############################################################
@@ -413,3 +410,16 @@ def checkIsOwner(UID):
     onwer = response[0]
     isOwner = int(onwer) == UID
     return isOwner
+
+############################################################
+#
+#               Gbb utilities
+#
+############################################################
+
+def configGbbCommand(option):
+    dotenv.set_key(".env", "enable_gbb", option)
+
+def checkGbbConfig():
+    config = dotenv.dotenv_values('.env')
+    return bool(int(config['enable_gbb']))
