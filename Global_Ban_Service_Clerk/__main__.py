@@ -19,8 +19,9 @@ from telegram.ext import (
 )
 
 logging.basicConfig(
-    filename='GBSC_bot.log',
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    filename="GBSC_bot.log",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
 
@@ -39,25 +40,58 @@ def main(ownerID) -> None:
     # Create the Application and pass it your bot's token.
     application = Application.builder().token(os.environ["BOT_TOKEN"]).build()
 
-    application.add_handler(CommandHandler("start", command.start))
-    application.add_handler(CommandHandler("report", command.report))
-    application.add_handler(CommandHandler("setAdmin", command.setAdmin))
-    application.add_handler(CommandHandler("revokeAdmin", command.revokeAdmin))
-    application.add_handler(CommandHandler("isAdmin", command.isAdmin))
-    application.add_handler(CommandHandler("setHeadquarter", command.setHeadquarter))
-    application.add_handler(CommandHandler("showRequest", command.showRequest))
-    application.add_handler(CommandHandler("help", command.help))
+    # Gbb Request related commands
+    application.add_handler(CommandHandler("start", command.GbbRequestCommand.start))
+    application.add_handler(CommandHandler("report", command.GbbRequestCommand.report))
     application.add_handler(
-        CommandHandler("showRemainRequests", command.showRemainRequests)
+        CommandHandler("showRequest", command.GbbRequestCommand.showRequest)
+    )
+    application.add_handler(
+        CommandHandler(
+            "showRemainRequests", command.GbbRequestCommand.showRemainRequests
+        )
     )
 
+    # Gbb related commands
+    application.add_handler(CommandHandler("gbb", command.GlobanCommand.globalBan))
+    application.add_handler(
+        CommandHandler("addGbbGroup", command.GlobanCommand.addGlobalBanGroup)
+    )
+    application.add_handler(
+        CommandHandler("removeGbbGroup", command.GlobanCommand.removeGlobalBanGroup)
+    )
+
+    # Utility commands
+    application.add_handler(CommandHandler("setAdmin", command.UtilityCommand.setAdmin))
+    application.add_handler(
+        CommandHandler("revokeAdmin", command.UtilityCommand.revokeAdmin)
+    )
+    application.add_handler(CommandHandler("isAdmin", command.UtilityCommand.isAdmin))
+    application.add_handler(CommandHandler("help", command.UtilityCommand.help))
+    application.add_handler(
+        CommandHandler("chatType", command.UtilityCommand.checkChatType)
+    )
+    application.add_handler(
+        CommandHandler("userid", command.UtilityCommand.checkUserID)
+    )
+
+    # VIP command
+    application.add_handler(
+        CommandHandler("setHeadquarter", command.VIPCommand.setHeadquarter)
+    )
+
+    # Conversation Related
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("submit", command.submit)],
+        entry_points=[CommandHandler("submit", command.GbbRequestCommand.submit)],
         states={
             GBBTYPE: [
-                MessageHandler(filters.Regex("^(Spam|Harassment|Test)$"), message.gbbtype)
+                MessageHandler(
+                    filters.Regex("^(Spam|Harassment|Test)$"), message.gbbtype
+                )
             ],
-            EVIDENCE: [MessageHandler(filters.TEXT & (~filters.COMMAND), message.evidenceText)],
+            EVIDENCE: [
+                MessageHandler(filters.TEXT & (~filters.COMMAND), message.evidenceText)
+            ],
             EVIDENCE_PHOTO: [
                 MessageHandler(filters.PHOTO, message.evidencePhoto),
                 CommandHandler("skip", message.skip_photo),
@@ -76,7 +110,6 @@ def main(ownerID) -> None:
             callbackQuery.buttonForReport, pattern="^(processed|rejected)_\-\d.*_\d.*$"
         )
     )
-
     application.add_handler(conv_handler)
 
     # Run the bot until the user presses Ctrl-C
