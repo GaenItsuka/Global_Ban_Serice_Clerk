@@ -1,8 +1,4 @@
-__version__ = "0.8.0"
-# from command import *
-# from callbackQuery import *
-# from message import *
-# from utils import *
+__version__ = "0.9.0"
 
 from . import (
     command,
