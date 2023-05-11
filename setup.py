@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="Global_Ban_Service_Clerk",
-    version="0.8.0",
+    version="0.9.0",
     author="Gaen Itsuka",
     author_email="",
     description="A python based telegram bot.",
@@ -26,5 +26,6 @@ setuptools.setup(
         "Click==8.0.3",
         "matplotlib==3.6.3",
         "toml==0.10.2",
+        "python-dotenv==1.0.0",
     ],
 )
