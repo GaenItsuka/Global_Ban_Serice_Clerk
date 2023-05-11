@@ -26,6 +26,7 @@ from .decorator import (
     HQOnly,
     NotPrivate,
     PrivateOnly,
+    GbbFilter,
 )
 
 from .utils import (
@@ -46,12 +47,61 @@ from .utils import (
     getGbbGroupLog,
     updateGbbGroupLog,
     removeGbbGroupLog,
+    configGbbCommand,
+    checkGbbConfig,
 )
 
 logger = logging.getLogger(__name__)
 
 
 class GlobanCommand:
+    @staticmethod
+    @HQOnly
+    async def enableGbb(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user = update.effective_user
+        
+        if checkIsAdmin(user.id) or checkIsVIP(user.id):
+            logger.info(
+                f"Admin {user.full_name}({user.id}) trying to enable Gbb command."
+            )
+            configGbbCommand('1')
+            message = 'Done'
+        else:
+            logger.warning(
+                f"User {user.full_name}({user.id}) trying to enable Gbb command."
+            )
+            message = "You are not permit to do that. Your action will be recorded."
+        await update.message.reply_html(message)
+
+    @staticmethod
+    @HQOnly
+    async def disableGbb(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user = update.effective_user
+        
+        if checkIsAdmin(user.id) or checkIsVIP(user.id):
+            logger.info(
+                f"Admin {user.full_name}({user.id}) trying to disable Gbb command."
+            )
+            configGbbCommand('0')
+            message = 'Done'
+        else:
+            logger.warning(
+                f"User {user.full_name}({user.id}) trying to disable Gbb command."
+            )
+            message = "You are not permit to do that. Your action will be recorded."
+        await update.message.reply_html(message)
+    
+    @staticmethod
+    @HQOnly
+    async def checkGbb(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        status = checkGbbConfig()
+        
+        message = rf"Gbb command enabled: {status}."
+        
+        await update.message.reply_html(message)
+    
+    
+    
     @staticmethod
     @NotPrivate
     async def removeGlobalBanGroup(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -74,6 +124,7 @@ class GlobanCommand:
         await update.message.reply_html(message)
 
     @staticmethod
+    @GbbFilter
     async def globalBan(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         bot = context.bot
