@@ -7,6 +7,7 @@ import pandas as pd
 
 from functools import partial
 from datetime import datetime
+from secrets import token_hex
 
 logger = logging.getLogger(__name__)
 
@@ -19,23 +20,25 @@ logger = logging.getLogger(__name__)
 
 def preflightCheck(ownerID):
     chkList = [
+        "gbb.db",
         "GbbRequestDB.db",
         "Admin.db",
         "config/config.toml",
     ]
     partialCreateAdminDB = partial(createAdminDB, ownerID=ownerID)
     funcList = [
+        createGbbGroupTable,
         createRequestLogTable,
         partialCreateAdminDB,
         createConfig,
     ]
 
     chkDescription = [
+        "Creating DB for Gbb Grouos",
         "Creating DB for request logs.",
         "Creating DB for admin.",
         "Creating toml file for basic config.",
     ]
-
     for check, func, description in zip(chkList, funcList, chkDescription):
         if not os.path.exists(check):
             logger.info(description)
@@ -74,6 +77,72 @@ def checkTableExist(tableName, DBName="GbbRequestDB.db"):
     else:
         result = True if tableName in tableList[0] else False
     return result
+
+
+############################################################
+#
+#               Global Ban record utilities
+#
+############################################################
+
+
+def createGbbGroupTable():
+    conn, cursor = createConnection("gbb.db")
+    response = cursor.execute(
+        """CREATE TABLE IF NOT EXISTS GbbGroup (
+            groupname text,
+            groupid text
+        );
+        """
+    )
+    result = response.fetchall()
+    return result
+
+
+def createGbbGroupLog(
+    groupName: str,
+    groupID: str,
+):
+    conn, cursor = createConnection("gbb.db")
+
+    response = cursor.execute(
+        f"""INSERT INTO GbbGroup (
+            groupname,
+            groupid
+        )
+        VALUES (
+            "{groupName}",
+            "{groupID}"
+        );
+        """
+    )
+    conn.commit()
+    conn.close()
+
+
+def getGbbGroupLog():
+    conn, cursor = createConnection("gbb.db")
+    df = pd.read_sql(f"SELECT * FROM GbbGroup", conn)
+    return df
+
+
+def updateGbbGroupLog(new_id, groupname):
+    conn, cursor = createConnection("gbb.db")
+    response = cursor.execute(
+        f"""UPDATE GbbGroup
+        SET groupid = "{new_id}"
+        WHERE groupname = "{groupname}";
+        """
+    )
+
+
+def removeGbbGroupLog(chat_id):
+    conn, cursor = createConnection("gbb.db")
+    response = cursor.execute(
+        f"""DELETE FROM GbbGroup
+        WHERE groupid = "{chat_id}";
+        """
+    )
 
 
 ############################################################
@@ -287,7 +356,7 @@ def createAdminDB(ownerID=9999999999):
         VALUES ("{ownerID}", "admin", {True}, {True});
         """
     )
-    result = response.fetchall()
+    # result = response.fetchall()
     conn.commit()
     conn.close()
 
@@ -339,7 +408,6 @@ def checkIsVIP(UID):
 
 
 def checkIsOwner(UID):
-
     conn, cursor = createConnection(DBName="Admin.db")
     response = cursor.execute("SELECT UID FROM Admin WHERE CLASS = 'owner';").fetchall()
     onwer = response[0]
