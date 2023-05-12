@@ -70,6 +70,7 @@ class GlobanCommand:
 
     @staticmethod
     @HQOnly
+    @checkAdmin
     async def disableGbb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         configGbbCommand("0")
         message = "Done"
