@@ -4,10 +4,11 @@ from .utils import getHQIndex, checkGbbConfig, checkIsAdmin, checkIsVIP
 
 logger = logging.getLogger(__name__)
 
+
 def checkAdmin(func):
     async def wraps(*args, **kargs):
         user = args[0].effective_user
-        
+
         if checkIsAdmin(user.id):
             logger.info(
                 f"Admin {user.full_name}({user.id}) is trying to execute function: {func.__name__}."
@@ -20,12 +21,14 @@ def checkAdmin(func):
             return await args[0].message.reply_text(
                 "You are not permit to do that. Your action will be recorded."
             )
+
     return wraps
+
 
 def checkVIP(func):
     async def wraps(*args, **kargs):
         user = args[0].effective_user
-        
+
         if checkIsVIP(user.id):
             logger.info(
                 f"VIP {user.full_name}({user.id}) is trying to execute function: {func.__name__}."
@@ -38,12 +41,14 @@ def checkVIP(func):
             return await args[0].message.reply_text(
                 "You are not permit to do that. Your action will be recorded."
             )
+
     return wraps
+
 
 def checkReplied(func):
     async def wraps(*args, **kargs):
         replied_message = args[0].message.reply_to_message
-        
+
         if replied_message is not None:
             return await func(*args, **kargs)
         else:
@@ -51,7 +56,9 @@ def checkReplied(func):
                 "This function only works when replying to a specific message. "
                 "Please check again."
             )
+
     return wraps
+
 
 def HQOnly(func):
     async def wraps(*args, **kargs):
@@ -110,7 +117,9 @@ def GbbFilter(func):
             return await func(*args, **kargs)
         else:
             pass
+
     return wraps
+
 
 def checkArgumentExist(func):
     async def wraps(*args, **kargs):
@@ -118,9 +127,9 @@ def checkArgumentExist(func):
             return await func(*args, **kargs)
         else:
             return await args[0].message.reply_text(
-                "This function must operate with arguments. "
-                "Please check again."
+                "This function must operate with arguments. " "Please check again."
             )
+
     return wraps
 
 
@@ -133,4 +142,5 @@ def checkMultipleArgumentNotExist(func):
                 "This function must operate with single arguments. "
                 "Please check again."
             )
+
     return wraps

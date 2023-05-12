@@ -106,9 +106,7 @@ class GlobanCommand:
                 )
             except Exception as ex:
                 if ex == ChatMigrated:
-                    logger.info(
-                        f"Found chat id changed. Starting to update database."
-                    )
+                    logger.info(f"Found chat id changed. Starting to update database.")
                     new_chat_id = ex.new_chat_id
                     updateGbbGroupLog(new_chat_id, groupname)
                 else:
@@ -147,11 +145,11 @@ class GlobanCommand:
     async def removeGlobalBanGroup(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat = update.effective_chat
         user = update.effective_user
-        
+
         logger.info(
             f"Admin {user.full_name}({user.id}) is trying to add a group to gbb target."
         )
-        
+
         try:
             removeGbbGroupLog(chat.id)
             message = "A gbb target has been removed."
@@ -197,7 +195,6 @@ class GbbRequestCommand:
                 message,
             )
 
-
     @staticmethod
     @NotPrivate
     @checkReplied
@@ -223,9 +220,7 @@ class GbbRequestCommand:
             f"\nComment: {comment}."
         )
 
-        bot_reply = await update.message.reply_text(
-            "The message has been reported."
-        )
+        bot_reply = await update.message.reply_text("The message has been reported.")
 
         keyboard = [
             [
