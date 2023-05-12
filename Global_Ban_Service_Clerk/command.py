@@ -29,8 +29,9 @@ from .decorator import (
     GbbFilter,
     checkArgumentExist,
     checkReplied,
-    checkIsVIP,
+    checkVIP,
     checkAdmin,
+    checkMultipleArgumentNotExist,
 )
 
 from .utils import (
@@ -82,144 +83,125 @@ class GlobanCommand:
         await update.message.reply_html(message)
 
     @staticmethod
-    @NotPrivate
-    async def removeGlobalBanGroup(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user = update.effective_user
-        chat = update.effective_chat
-        bot = context.bot
-
-        if checkIsAdmin(user.id) or checkIsVIP(user.id):
-            logger.info(
-                f"Admin {user.full_name}({user.id}) trying to remove chat {chat.id} from list."
-            )
-            removeGbbGroupLog(chat.id)
-            message = "Done"
-        else:
-            logger.warning(
-                f"User {user.full_name}({user.id}) trying to remove chat {chat.id} from list."
-            )
-            message = "You are not permit to do that. Your action will be recorded."
-
-        await update.message.reply_html(message)
-
-    @staticmethod
     @GbbFilter
+    @checkReplied
+    @checkAdmin
     async def globalBan(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         bot = context.bot
 
-        if context.args != []:
-            if checkIsAdmin(user.id) or checkIsVIP(user.id):
-                logger.info(f"Admin {user.full_name}({user.id}) send a gbb request.")
+        logger.info(f"Admin {user.full_name}({user.id}) send a gbb request.")
 
-                groupList = getGbbGroupLog().groupid.to_list()
-                groupNameList = getGbbGroupLog().groupname.to_list()
+        groupList = getGbbGroupLog().groupid.to_list()
+        groupNameList = getGbbGroupLog().groupname.to_list()
 
-                targetUser = context.args[0]
+        targetUser = context.args[0]
 
-                for groupid, groupname in zip(groupList, groupNameList):
-                    chat = await bot.get_chat(int(groupid))
-                    try:
-                        res = await bot.ban_chat_member(
-                            groupid,
-                            targetUser,
-                        )
-                    except Exception as ex:
-                        if ex == ChatMigrated:
-                            logger.info(
-                                f"Found chat id changed. Starting to update database."
-                            )
-                            new_chat_id = ex.new_chat_id
-                            updateGbbGroupLog(new_chat_id, groupname)
-                        else:
-                            expcept_msg = (
-                                f"An exception occured when executing gbb command in chat: {chat.id}"
-                                f"Exception: {ex}"
-                            )
-                            logger.warning(expcept_msg)
-                            await update.message.reply_html(expcept_msg)
-
-                message = f"User {targetUser} has been global banned."
-            else:
-                logger.warning(
-                    f"User: {user.full_name}({user.id}) is trying to trigger requests."
+        for groupid, groupname in zip(groupList, groupNameList):
+            chat = await bot.get_chat(int(groupid))
+            try:
+                res = await bot.ban_chat_member(
+                    groupid,
+                    targetUser,
                 )
-                message = "You are not permit to do that. Your action will be recorded."
-        else:
-            message = f"No uid provided. Please check again!"
+            except Exception as ex:
+                if ex == ChatMigrated:
+                    logger.info(
+                        f"Found chat id changed. Starting to update database."
+                    )
+                    new_chat_id = ex.new_chat_id
+                    updateGbbGroupLog(new_chat_id, groupname)
+                else:
+                    expcept_msg = (
+                        f"An exception occured when executing gbb command in chat: {chat.id}"
+                        f"Exception: {ex}"
+                    )
+                    logger.warning(expcept_msg)
+                    await update.message.reply_html(expcept_msg)
+
+        message = f"User {targetUser} has been global banned."
 
         await update.message.reply_html(message)
 
     @staticmethod
+    @checkAdmin
     async def addGlobalBanGroup(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         chat = update.effective_chat
-        bot = context.bot
-        if checkIsVIP(user.id):
-            logger.info(
-                f"Admin {user.full_name}({user.id}) is trying to add a group to gbb target."
-            )
 
-            try:
-                createGbbGroupLog(chat.title, chat.id)
-                message = "A new gbb target recorded."
-            except Exception as ex:
-                message = f"An error occur: {ex}"
+        logger.info(
+            f"Admin {user.full_name}({user.id}) is trying to add a group to gbb target."
+        )
 
-        else:
-            logger.warning(
-                f"User: {user.full_name}({user.id}) is trying to trigger requests."
-            )
-            message = "You are not permit to do that. Your action will be recorded."
+        try:
+            createGbbGroupLog(chat.title, chat.id)
+            message = "A new gbb target recorded."
+        except Exception as ex:
+            message = f"An error occur: {ex}"
 
+        await update.message.reply_html(message)
+
+    @staticmethod
+    @NotPrivate
+    @checkAdmin
+    async def removeGlobalBanGroup(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        chat = update.effective_chat
+        user = update.effective_user
+        
+        logger.info(
+            f"Admin {user.full_name}({user.id}) is trying to add a group to gbb target."
+        )
+        
+        try:
+            removeGbbGroupLog(chat.id)
+            message = "A gbb target has been removed."
+        except Exception as ex:
+            message = f"An error occur: {ex}"
         await update.message.reply_html(message)
 
 
 class GbbRequestCommand:
     @staticmethod
     @HQOnly
+    @checkAdmin
     async def showRemainRequests(
         update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> int:
         user = update.effective_user
-        if checkIsAdmin(user.id):
-            logger.info(
-                f"Admin: {user.full_name}({user.id}) request the list of remaining requests."
+        logger.info(
+            f"Admin: {user.full_name}({user.id}) request the list of remaining requests."
+        )
+        remainRequestDF = fetchRemainRequest()
+
+        if remainRequestDF.empty:
+            await update.message.reply_text(
+                "No pending request exists.",
             )
-            remainRequestDF = fetchRemainRequest()
-
-            if remainRequestDF.empty:
-                await update.message.reply_text(
-                    "No pending request exists.",
-                )
-            else:
-                recordList = remainRequestDF.to_dict("records")
-                message_context = []
-                for _dict in recordList:
-                    user_submit = User(
-                        _dict["requestUser"], _dict["requestUserName"], False
-                    )
-
-                    _message_context = rf"▪RequstID: <pre>{_dict['requestID']}</pre>, 👤Submitee: {user_submit.mention_html()}"
-
-                    message_context.append(_message_context)
-
-                message_context.append(
-                    rf"Use <pre>/showRequest</pre> command with request ID to get detail information."
-                )
-                message = "\n======\n".join(message_context)
-                await update.message.reply_html(
-                    message,
-                )
         else:
-            logger.warning(
-                f"User: {user.full_name}({user.id}) is trying to access the list of remaining requests."
+            recordList = remainRequestDF.to_dict("records")
+            message_context = []
+            for _dict in recordList:
+                user_submit = User(
+                    _dict["requestUser"], _dict["requestUserName"], False
+                )
+
+                _message_context = rf"▪RequstID: <pre>{_dict['requestID']}</pre>, 👤Submitee: {user_submit.mention_html()}"
+
+                message_context.append(_message_context)
+
+            message_context.append(
+                rf"Use <pre>/showRequest</pre> command with request ID to get detail information."
             )
-            await update.message.reply_html("You are not permit to do this.")
+            message = "\n======\n".join(message_context)
+            await update.message.reply_html(
+                message,
+            )
+
 
     @staticmethod
     @NotPrivate
     @checkReplied
+    @checkArgumentExist
     async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         HQIndex = getHQIndex()
         bot = context.bot
@@ -228,105 +210,88 @@ class GbbRequestCommand:
         sender = update.effective_user
         chat = update.effective_chat
 
-        if replied_message is not None and context.args != []:
-            logger.info(
-                f"User: {sender.first_name}({sender.id}) has reported a GBB request in chat: {chat.full_name}({chat.id})."
-            )
-            comment = "_".join(context.args)
-            mesesage = (
-                rf"User: {sender.mention_html()} has reported a GBB reuqest in {chat.mention_html()}."
-                "\n"
-                rf"Reported user: {replied_user.mention_html()}(<pre>{replied_user.id}</pre>)"
-                "\n"
-                rf"Message link: {replied_message.link}"
-                f"\nComment: {comment}."
-            )
+        logger.info(
+            f"User: {sender.first_name}({sender.id}) has reported a GBB request in chat: {chat.full_name}({chat.id})."
+        )
+        comment = "_".join(context.args)
+        mesesage = (
+            rf"User: {sender.mention_html()} has reported a GBB reuqest in {chat.mention_html()}."
+            "\n"
+            rf"Reported user: {replied_user.mention_html()}(<pre>{replied_user.id}</pre>)"
+            "\n"
+            rf"Message link: {replied_message.link}"
+            f"\nComment: {comment}."
+        )
 
-            bot_reply = await update.message.reply_text(
-                "The message has been reported."
-            )
+        bot_reply = await update.message.reply_text(
+            "The message has been reported."
+        )
 
-            keyboard = [
-                [
-                    InlineKeyboardButton(
-                        "Done",
-                        callback_data=f"processed_{chat.id}_{bot_reply.message_id}",
-                    ),
-                    InlineKeyboardButton(
-                        "Reject",
-                        callback_data=f"rejected_{chat.id}_{bot_reply.message_id}",
-                    ),
-                ]
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "Done",
+                    callback_data=f"processed_{chat.id}_{bot_reply.message_id}",
+                ),
+                InlineKeyboardButton(
+                    "Reject",
+                    callback_data=f"rejected_{chat.id}_{bot_reply.message_id}",
+                ),
             ]
+        ]
 
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            await bot.send_message(
-                HQIndex,
-                mesesage,
-                parse_mode="HTML",
-                reply_markup=reply_markup,
-            )
-        elif replied_message is not None and context.args == []:
-            await update.message.reply_text(
-                "No comment message exists. Please send a report with comment again."
-            )
-        else:
-            await update.message.reply_text(
-                "No replied message exists. Please check again."
-            )
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await bot.send_message(
+            HQIndex,
+            mesesage,
+            parse_mode="HTML",
+            reply_markup=reply_markup,
+        )
 
     @staticmethod
     @HQOnly
+    @checkArgumentExist
+    @checkMultipleArgumentNotExist
     async def showRequest(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-        if context.args != []:
-            ticketID = context.args[0]
-            remainRequestDF = fetchRemainRequest()
+        ticketID = context.args[0]
+        remainRequestDF = fetchRemainRequest()
 
-            desiredRequest = remainRequestDF.query(f"requestID == @ticketID")
+        desiredRequest = remainRequestDF.query(f"requestID == @ticketID")
 
-            _dict = desiredRequest.to_dict("records")[0]
+        _dict = desiredRequest.to_dict("records")[0]
 
-            user_submit = User(_dict["requestUser"], _dict["requestUserName"], False)
+        user_submit = User(_dict["requestUser"], _dict["requestUserName"], False)
 
-            keyboard = [
-                [
-                    InlineKeyboardButton(
-                        "Done", callback_data=f"processed_{_dict['requestID']}"
-                    ),
-                    InlineKeyboardButton(
-                        "Reject", callback_data=f"rejected_{_dict['requestID']}"
-                    ),
-                ]
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "Done", callback_data=f"processed_{_dict['requestID']}"
+                ),
+                InlineKeyboardButton(
+                    "Reject", callback_data=f"rejected_{_dict['requestID']}"
+                ),
             ]
+        ]
 
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            message_template = (
-                f"Request ticket with ID: {_dict['requestID']} received! \n"
-                rf"The user who submitted the request: {user_submit.mention_html()}. "
-                f"\nThe type of GBB request: {_dict['requestType']}. \n"
-                rf"Evidence: {_dict['requestEvidence']}."
-            )
-            if _dict["isEvidenceHasPhoto"]:
-                await update.message.reply_photo(
-                    photo=str(_dict["requestEvidencePhoto"]),
-                    parse_mode="HTML",
-                    caption=message_template,
-                    reply_markup=reply_markup,
-                )
-            else:
-                await update.message.reply_text(
-                    message_template,
-                    parse_mode="HTML",
-                    reply_markup=reply_markup,
-                )
-
-        elif len(context.args) > 1:
-            await update.message.reply_html(
-                "Cannot search more than one request at the same time. Please check again.",
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        message_template = (
+            f"Request ticket with ID: {_dict['requestID']} received! \n"
+            rf"The user who submitted the request: {user_submit.mention_html()}. "
+            f"\nThe type of GBB request: {_dict['requestType']}. \n"
+            rf"Evidence: {_dict['requestEvidence']}."
+        )
+        if _dict["isEvidenceHasPhoto"]:
+            await update.message.reply_photo(
+                photo=str(_dict["requestEvidencePhoto"]),
+                parse_mode="HTML",
+                caption=message_template,
+                reply_markup=reply_markup,
             )
         else:
-            await update.message.reply_html(
-                "No argument found. Abort!",
+            await update.message.reply_text(
+                message_template,
+                parse_mode="HTML",
+                reply_markup=reply_markup,
             )
 
     @staticmethod
@@ -433,32 +398,29 @@ class UtilityCommand:
         replied_user = replied_message.from_user
         sender = update.effective_user
 
-        if context.args != []:
-            vipOption = context.args[0]
+        vipOption = context.args[0]
 
-            if vipOption in ["VIP", "GENERAL"]:
-                if checkIsVIP(sender.id):
-                    logger.info(
-                        f"VIP: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id})."
-                    )
-                    isVIP = True if vipOption == "VIP" else False
-                    createAdminLog(replied_user.id, isVIP)
-                    message = rf"User: {replied_user.mention_html()} has been configured as a administrator."
-                    logger.info(
-                        f"VIP: {sender.full_name}({sender.id}) has granted the permission to {replied_user.full_name}({replied_user.id})."
-                    )
-                else:
-                    logger.warning(
-                        f"User: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id})."
-                    )
-                    message = "You are not permit to do this."
+        if vipOption in ["VIP", "GENERAL"]:
+            if checkIsVIP(sender.id):
+                logger.info(
+                    f"VIP: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id})."
+                )
+                isVIP = True if vipOption == "VIP" else False
+                createAdminLog(replied_user.id, isVIP)
+                message = rf"User: {replied_user.mention_html()} has been configured as a administrator."
+                logger.info(
+                    f"VIP: {sender.full_name}({sender.id}) has granted the permission to {replied_user.full_name}({replied_user.id})."
+                )
             else:
                 logger.warning(
                     f"User: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id})."
                 )
-                message = "No valid option provided. Please check again!"
+                message = "You are not permit to do this."
         else:
-            message = f"No option provided. Please check again!"
+            logger.warning(
+                f"User: {sender.full_name}({sender.id}) is trying to grant the permission to {replied_user.full_name}({replied_user.id})."
+            )
+            message = "No valid option provided. Please check again!"
 
         await update.message.reply_html(message)
 
@@ -496,6 +458,7 @@ class UtilityCommand:
     async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         user = update.effective_user
         chat = update.effective_chat
+        sender = update.effective_user
         HQIndex = getHQIndex()
         if (checkIsAdmin(user.id) or checkIsVIP(sender.id)) and chat.id == HQIndex:
             help_msg = (
@@ -527,33 +490,27 @@ class UtilityCommand:
 
 class VIPCommand:
     @staticmethod
+    @checkVIP
     async def setHeadquarter(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Set the headquarter that the request ticket to broadcast."""
 
         chat = update.effective_chat
         user = update.effective_user
 
-        if checkIsVIP(user.id):
-            try:
-                logger.warning(
-                    f"Admin: {user.full_name}({user.id}) is trying to change the HQ."
-                )
-                setHQIndex(chat.id)
-                await update.message.reply_html("Complete!")
-                logger.warning(
-                    f"The HQ group has been changed by admin: {user.full_name}({user.id})."
-                )
-
-            except Exception as e:
-                await update.message.reply_html(f"An error occured: {e}.")
-                log_message = (
-                    f"An error occured when admin: {user.full_name}({user.id}) is trying to change the HQ.\n"
-                    f"Exception: {e}"
-                )
-                logger.warning(log_message)
-
-        else:
-            logger.info(
-                f"User: {user.first_name}({user.id}) is trying to change the HQ."
+        try:
+            logger.warning(
+                f"Admin: {user.full_name}({user.id}) is trying to change the HQ."
             )
-            await update.message.reply_html("You are not permit to do this.")
+            setHQIndex(chat.id)
+            await update.message.reply_html("Complete!")
+            logger.warning(
+                f"The HQ group has been changed by admin: {user.full_name}({user.id})."
+            )
+
+        except Exception as e:
+            await update.message.reply_html(f"An error occured: {e}.")
+            log_message = (
+                f"An error occured when admin: {user.full_name}({user.id}) is trying to change the HQ.\n"
+                f"Exception: {e}"
+            )
+            logger.warning(log_message)
