@@ -124,4 +124,13 @@ def checkArgumentExist(func):
     return wraps
 
 
-    
+def checkMultipleArgumentNotExist(func):
+    async def wraps(*args, **kargs):
+        if len(args[1].args) == 1:
+            return await func(*args, **kargs)
+        else:
+            return await args[0].message.reply_text(
+                "This function must operate with single arguments. "
+                "Please check again."
+            )
+    return wraps
