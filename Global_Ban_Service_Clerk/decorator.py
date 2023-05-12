@@ -105,7 +105,7 @@ def PrivateOnly(func):
             return await func(*args, **kargs)
         else:
             return await args[0].message.reply_text(
-                "This function cannot operate in private chat."
+                "This function can only operate in private chat."
             )
 
     return wraps
