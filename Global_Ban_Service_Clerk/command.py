@@ -27,6 +27,10 @@ from .decorator import (
     NotPrivate,
     PrivateOnly,
     GbbFilter,
+    checkArgumentExist,
+    checkReplied,
+    checkIsVIP,
+    checkAdmin,
 )
 
 from .utils import (
@@ -57,47 +61,24 @@ logger = logging.getLogger(__name__)
 class GlobanCommand:
     @staticmethod
     @HQOnly
+    @checkAdmin
     async def enableGbb(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user = update.effective_user
-
-        if checkIsAdmin(user.id) or checkIsVIP(user.id):
-            logger.info(
-                f"Admin {user.full_name}({user.id}) trying to enable Gbb command."
-            )
-            configGbbCommand("1")
-            message = "Done"
-        else:
-            logger.warning(
-                f"User {user.full_name}({user.id}) trying to enable Gbb command."
-            )
-            message = "You are not permit to do that. Your action will be recorded."
+        configGbbCommand("1")
+        message = "Done"
         await update.message.reply_html(message)
 
     @staticmethod
     @HQOnly
     async def disableGbb(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user = update.effective_user
-
-        if checkIsAdmin(user.id) or checkIsVIP(user.id):
-            logger.info(
-                f"Admin {user.full_name}({user.id}) trying to disable Gbb command."
-            )
-            configGbbCommand("0")
-            message = "Done"
-        else:
-            logger.warning(
-                f"User {user.full_name}({user.id}) trying to disable Gbb command."
-            )
-            message = "You are not permit to do that. Your action will be recorded."
+        configGbbCommand("0")
+        message = "Done"
         await update.message.reply_html(message)
 
     @staticmethod
     @HQOnly
     async def checkGbb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         status = checkGbbConfig()
-
         message = rf"Gbb command enabled: {status}."
-
         await update.message.reply_html(message)
 
     @staticmethod
@@ -238,6 +219,7 @@ class GbbRequestCommand:
 
     @staticmethod
     @NotPrivate
+    @checkReplied
     async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         HQIndex = getHQIndex()
         bot = context.bot
@@ -431,6 +413,7 @@ class UtilityCommand:
 
     @staticmethod
     @HQOnly
+    @checkReplied
     async def isAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         replied_message = update.message.reply_to_message
         replied_user = replied_message.from_user
@@ -444,6 +427,7 @@ class UtilityCommand:
 
     @staticmethod
     @HQOnly
+    @checkReplied
     async def setAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         replied_message = update.message.reply_to_message
         replied_user = replied_message.from_user
@@ -480,6 +464,7 @@ class UtilityCommand:
 
     @staticmethod
     @HQOnly
+    @checkReplied
     async def revokeAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         replied_message = update.message.reply_to_message
         replied_user = replied_message.from_user
