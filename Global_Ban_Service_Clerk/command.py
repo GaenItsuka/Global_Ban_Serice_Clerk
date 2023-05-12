@@ -387,6 +387,7 @@ class UtilityCommand:
 
     @staticmethod
     @HQOnly
+    @checkVIP
     @checkReplied
     async def setAdmin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         replied_message = update.message.reply_to_message
